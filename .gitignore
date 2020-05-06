@@ -1,0 +1,6 @@
+*.pyc
+*.pkl
+*.gz
+.vscode
+files/
+data/
