@@ -44,7 +44,7 @@ class PreProcessor:
             (['user_following_count'], StandardScaler()),
             ('hashtags', TfidfVectorizer(max_features=1_000)),
             ('urls', TfidfVectorizer(max_features=1_000)),
-            ('user_description', TfidfVectorizer(max_features=10_000)),
+            ('user_description', TfidfVectorizer(max_features=1_000)),
             ('user_location', TfidfVectorizer(max_features=1_000)),
             ('user_name', TfidfVectorizer(max_features=1_000)),
             ('user_screen_name', TfidfVectorizer(max_features=1_000)),
