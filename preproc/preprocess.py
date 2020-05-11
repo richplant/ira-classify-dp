@@ -22,7 +22,10 @@ class EmbedTransformer(TransformerMixin):
     def fit_transform(self, data, **kwargs):
         new_x = []
         for doc in self.nlp.pipe(data):
-            new_x.append(cupy.asnumpy(doc[0].vector))
+            if len(doc) > 0:
+                new_x.append(cupy.asnumpy(doc[0].vector))
+            else:
+                new_x.append(np.zeros(768))
         return np.array(new_x)
 
 
@@ -44,7 +47,7 @@ class PreProcessor:
             (['user_following_count'], StandardScaler()),
             ('hashtags', TfidfVectorizer(max_features=1_000)),
             ('urls', TfidfVectorizer(max_features=1_000)),
-            ('user_description', TfidfVectorizer(max_features=1_000)),
+            ('user_description', EmbedTransformer()),
             ('user_location', TfidfVectorizer(max_features=1_000)),
             ('user_name', TfidfVectorizer(max_features=1_000)),
             ('user_screen_name', TfidfVectorizer(max_features=1_000)),

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-import datetime
+from datetime import datetime
 
 def _get_available_gpus():
     """Get a list of available gpu devices (formatted as strings).
@@ -101,10 +101,11 @@ class TFModels:
         }
 
     def run_models(self, data, labels):
-        train_data, val_data, train_labels, val_labels = train_test_split(data, labels, test_size=0.1)
+        train_data, val_data, train_labels, val_labels = train_test_split(data, labels)
         scores = {}
         for name, model in self.models.items():
-            print(f'Fitting {name} model...')
+            now = datetime.now()
+            print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Fitting {name} model...")
             setattr(model, 'output_size', labels.shape[1])
             model_history = model.fit(train_data, train_labels,
                                       batch_size=self.batch_size,
@@ -116,12 +117,12 @@ class TFModels:
 
     def save_models(self, filepath):
         for name, model in self.models.items():
-            model.save(filepath='{}-{}.h5'.format(filepath, name))
+            model.save(filepath=path.join(filepath, f'{name}.h5'))
 
     def load_models(self, filepath):
         for name, model in self.models.items():
-            if path.isfile('{}-{}.h5'.format(filepath, name)):
-                self.models[name] = load_model('{}-{}.h5'.format(filepath, name))
+            if path.isfile(path.join(filepath, f'{name}.h5')):
+                self.models[name] = load_model(path.join(filepath, f'{name}.h5'))
 
     def save_history(self, histories, outpath):
         report = {}
@@ -140,9 +141,9 @@ class TFModels:
             plt.legend(loc='best')
             plt.title('Training history for {} model'.format(name))
 
-            now = datetime.datetime.now()
-            plt.savefig(path.join(outpath, f'{now.strftime("%Y-%m-%d")}-name-history.png'))
-            frame.to_csv(path.join(outpath, f'{now.strftime("%Y-%m-%d")}-name-history.csv'), index=False)
+            now = datetime.now()
+            plt.savefig(path.join(outpath, f'{now.strftime("%Y-%m-%d")}-{name}-history.png'))
+            frame.to_csv(path.join(outpath, f'{now.strftime("%Y-%m-%d")}-{name}-history.csv'), index=False)
         return pd.DataFrame.from_dict(report, orient='index', columns=['Accuracy', 'Precision', 'Recall', 'f1', 'ROC AUC'])
 
     def predict(self, data):

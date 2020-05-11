@@ -5,7 +5,7 @@ from models import skmodels
 from models import tfmodels
 from pathlib import Path
 import argparse
-import datetime
+from datetime import datetime
 import pandas as pd
 
 
@@ -21,16 +21,17 @@ def train(args, data, labels, model_type='sk-models'):
         scores = models.run_models(data, labels)
         models.save_models(args.o.joinpath('models'))
         print(scores)
-        now = datetime.datetime.now()
-        scores.to_csv(args.o.joinpath(f'{now.strftime("%Y-%m-%d")}-sk-models.csv'), index=True)
+        now = datetime.now()
+        scores.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-sk-models.csv'), index=True)
 
     elif model_type == 'tf-models':
         models = tfmodels.TFModels(data.shape[1])
         scores = models.run_models(data, labels)
-        report = models.save_history(scores, args.o)
+        models.save_models(args.o.joinpath('models'))
+        report = models.save_history(scores, args.o.joinpath('training'))
         print(report)
-        now = datetime.datetime.now()
-        report.to_csv(args.o.joinpath(f'{now.strftime("%Y-%m-%d")}-tf-models.csv'), index=True)
+        now = datetime.now()
+        report.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-tf-models.csv'), index=True)
 
     else:
         raise KeyError('Model type not found.')
@@ -43,8 +44,9 @@ def main():
     args = parser.parse_args()
 
     args.i = Path.cwd().joinpath(args.input_dir)
-    args.o = Path.cwd().joinpath(args.output_dir).joinpath('training')
+    args.o = Path.cwd().joinpath(args.output_dir)
     Path(args.o.joinpath('models')).mkdir(parents=True, exist_ok=True)
+    Path(args.o.joinpath('training')).mkdir(parents=True, exist_ok=True)
 
     gpus = [device for device in device_lib.list_local_devices() if device.device_type == 'GPU']
     print("Num GPUs Available: ", len(gpus))
@@ -54,13 +56,19 @@ def main():
     for device in gpus:
         print(device.physical_device_desc)
 
-    print('Loading data...')
+    now = datetime.now()
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Loading data...")
     data = joblib.load(args.i.joinpath('train').joinpath('data.gz'))
     labels = joblib.load(args.i.joinpath('train').joinpath('labels.gz'))
+    now = datetime.now()
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Data loaded.")
 
-    print("Running model training...")
+    now = datetime.now()
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Running model training...")
     train(args, data=data, labels=labels, model_type='sk-models')
     train(args, data=data, labels=labels, model_type='tf-models')
+    now = datetime.now()
+    print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Training complete.")
 
 
 if __name__ == "__main__":

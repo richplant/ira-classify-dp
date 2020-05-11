@@ -2,7 +2,7 @@ import json
 import csv
 import bz2
 from pymongo import MongoClient
-from dateutil import parser
+from dateutil import parser, relativedelta
 
 
 class Importer:
@@ -58,7 +58,7 @@ class Importer:
     @staticmethod
     def get_str_for_date(date_val):
         dt = parser.parse(date_val, fuzzy=True)
-        dt.replace(year=2020)
+        dt = dt + relativedelta.relativedelta(year=2020)
         return dt
 
     @staticmethod

@@ -1,14 +1,14 @@
 from sklearn.linear_model import SGDClassifier
-from sklearn.svm import NuSVC
+from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 from sklearn.model_selection import cross_validate, StratifiedKFold, train_test_split
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
 import numpy as np
 import pandas as pd
 from joblib import dump, load
 from os import path
-
+from datetime import datetime
 
 class SkModels:
     def __init__(self):
@@ -16,7 +16,7 @@ class SkModels:
             'SGD': SGDClassifier(loss='log', random_state=1, max_iter=10_000, verbose=1, early_stopping=True, n_jobs=-1),
             'Bayes': GaussianNB(),
             'Forest': RandomForestClassifier(verbose=1, n_estimators=100, n_jobs=-1),
-            'SVM': NuSVC(verbose=1, probability=True, max_iter=10_000, random_state=1)
+            'SVM': BaggingClassifier(SVC(verbose=1, probability=True, random_state=1, cache_size=1_000), max_samples=0.1, n_jobs=-1, random_state=1, verbose=1)
         }
         self.scoring = {
             'Accuracy': 'accuracy',
@@ -26,18 +26,13 @@ class SkModels:
             'ROC AUC': 'roc_auc'
         }
 
-    def validate(self, model, data, labels):
-        splitter = StratifiedKFold(n_splits=10, random_state=1)
-        return cross_validate(model, data, labels, cv=splitter, scoring=self.scoring,
-                              return_train_score=False, n_jobs=-1,
-                              return_estimator=False, error_score=np.nan)
-
     def run_models(self, data, labels):
         labels = labels.ravel()
         train_data, val_data, train_labels, val_labels = train_test_split(data, labels, test_size=0.1)
         scores = {}
         for name, model in self.models.items():
-            print(f'Fitting {name} classifier...')
+            now = datetime.now()
+            print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Fitting {name} classifier...")
             model.fit(train_data, train_labels)
             y_pred = model.predict(val_data)
             y_scores = model.predict_proba(val_data)
