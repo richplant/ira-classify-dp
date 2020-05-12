@@ -1,12 +1,12 @@
 import tensorflow as tf
-from tensorflow.python.client import device_lib 
+from tensorflow.python.client import device_lib
 import joblib
-from models import skmodels
-from models import tfmodels
+from models import skmodels, tfmodels, tfprivmodels
 from pathlib import Path
 import argparse
 from datetime import datetime
 import pandas as pd
+import numpy as np
 
 
 def train(args, data, labels, model_type='sk-models'):
@@ -25,13 +25,23 @@ def train(args, data, labels, model_type='sk-models'):
         scores.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-sk-models.csv'), index=True)
 
     elif model_type == 'tf-models':
-        models = tfmodels.TFModels(data.shape[1])
+        models = tfmodels.TFModels(data.shape)
         scores = models.run_models(data, labels)
         models.save_models(args.o.joinpath('models'))
         report = models.save_history(scores, args.o.joinpath('training'))
         print(report)
         now = datetime.now()
         report.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-tf-models.csv'), index=True)
+
+    elif model_type == 'tf-priv-models':
+        data = data.reshape((data.shape[0], 1, data.shape[1]))
+        models = tfprivmodels.TFPrivModels((data.shape[1], data.shape[2]))
+        scores = models.run_models(data, labels)
+        models.save_models(args.o.joinpath('models'))
+        report = models.save_history(scores, args.o.joinpath('training'))
+        print(report)
+        now = datetime.now()
+        report.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-tfpriv-models.csv'), index=True)
 
     else:
         raise KeyError('Model type not found.')
@@ -65,8 +75,9 @@ def main():
 
     now = datetime.now()
     print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Running model training...")
-    train(args, data=data, labels=labels, model_type='sk-models')
-    train(args, data=data, labels=labels, model_type='tf-models')
+    #train(args, data=data, labels=labels, model_type='sk-models')
+    #train(args, data=data, labels=labels, model_type='tf-models')
+    train(args, data=data, labels=labels, model_type='tf-priv-models')
     now = datetime.now()
     print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Training complete.")
 

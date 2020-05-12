@@ -1,51 +1,65 @@
-from os import path
 import tensorflow as tf
 import keras_metrics as km
+from tensorflow_privacy.privacy.optimizers.dp_optimizer import DPAdamGaussianOptimizer
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from datetime import datetime
+from os import path
 
 
-class CNNModel:
+class pCNNModel:
     def __init__(self, opts, output_size=1, filter_length=50, hidden_size=128, kernel_size=2):
-        self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.layers.Reshape(target_shape=(1, opts['input_shape'][1]), input_shape=(opts['input_shape'][1], )))
-        self.model.add(tf.keras.layers.Conv1D(filter_length, kernel_size, padding='valid', activation='relu', strides=1,
-                              data_format='channels_first'))
+        self.optimizer = DPAdamGaussianOptimizer(
+            l2_norm_clip=opts['l2_norm_clip'],
+            noise_multiplier=opts['noise_multiplier'],
+            num_microbatches=opts['microbatches'],
+            learning_rate=opts['learning_rate']
+        )
+        self.model = tf.keras.Sequential()
+        self.model.add(tf.keras.layers.Conv1D(filter_length, kernel_size, padding='valid', activation='relu', strides=1, data_format='channels_first', input_shape=opts['input_shape']))
         self.model.add(tf.keras.layers.GlobalMaxPooling1D())
         self.model.add(tf.keras.layers.Dense(hidden_size))
         self.model.add(tf.keras.layers.Dropout(0.2))
         self.model.add(tf.keras.layers.Dense(opts['batch_size'], activation='relu'))
         self.model.add(tf.keras.layers.Dense(output_size, activation='sigmoid'))
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy', km.precision(), km.recall(), km.f1_score()])
+        self.model.compile(loss='binary_crossentropy', optimizer=self.optimizer, metrics=['accuracy', km.precision(), km.recall(), km.f1_score()])
         print(self.model.summary())
 
 
-class LSTMModel:
+class pLSTMModel:
     def __init__(self, opts, output_size=1, hidden_size=128):
-        self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.layers.Reshape(target_shape=(1, opts['input_shape'][1]), input_shape=(opts['input_shape'][1], )))
-        self.model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(hidden_size)))
+        self.optimizer = DPAdamGaussianOptimizer(
+            l2_norm_clip=opts['l2_norm_clip'],
+            noise_multiplier=opts['noise_multiplier'],
+            num_microbatches=opts['microbatches'],
+            learning_rate=opts['learning_rate']
+        )
+        self.model = tf.keras.Sequential()
+        self.model.add(tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(hidden_size), input_shape=opts['input_shape']))
         self.model.add(tf.keras.layers.Dropout(0.3))
         self.model.add(tf.keras.layers.Dense(opts['batch_size'], activation='relu'))
         self.model.add(tf.keras.layers.Dense(output_size, activation='sigmoid'))
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy', km.precision(), km.recall(), km.f1_score()])
+        self.model.compile(loss='binary_crossentropy', optimizer=self.optimizer, metrics=['accuracy', km.precision(), km.recall(), km.f1_score()])
         print(self.model.summary())
-        
 
-class TFModels:
-    def __init__(self, input_shape, batch_size=32, epochs=30):
+
+class TFPrivModels:
+    def __init__(self, input_shape, batch_size=1, epochs=30): # batch_size must be 1 since tensorflow_privacy expects dimension % batch_size == 0
         self.opts = {
             'input_shape': input_shape,
+            'learning_rate': 0.15,
+            'noise_multiplier': 1.1,
+            'l2_norm_clip': 1.0,
+            'microbatches': batch_size,
             'batch_size': batch_size,
             'epochs': epochs
         }
         self.early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=3, verbose=1)
         self.models = {
-            'CNN': CNNModel(self.opts).model,
-            'LSTM': LSTMModel(self.opts).model,
+            'pCNN': pCNNModel(self.opts).model,
+            'pLSTM': pLSTMModel(self.opts).model,
         }
 
     def run_models(self, data, labels):

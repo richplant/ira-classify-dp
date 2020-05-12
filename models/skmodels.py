@@ -23,7 +23,6 @@ class SkModels:
             'Precision': 'precision_macro',
             'Recall': 'recall_macro',
             'F-score': 'f1_macro',
-            'ROC AUC': 'roc_auc'
         }
 
     def run_models(self, data, labels):
@@ -35,14 +34,12 @@ class SkModels:
             print(f"{now.strftime('%Y-%m-%d %H:%M:%S')} Fitting {name} classifier...")
             model.fit(train_data, train_labels)
             y_pred = model.predict(val_data)
-            y_scores = model.predict_proba(val_data)
             acc = accuracy_score(val_labels, y_pred)
             pre = precision_score(val_labels, y_pred, average='macro')
             rec = recall_score(val_labels, y_pred, average='macro')
             f1 = f1_score(val_labels, y_pred, average='macro')
-            roc = roc_auc_score(val_labels, y_scores[:, 1])
-            scores[name] = [acc, pre, rec, f1, roc]
-        return pd.DataFrame.from_dict(scores, columns=['Accuracy', 'Precision', 'Recall', 'f1', 'ROC AUC'], orient='index')
+            scores[name] = [acc, pre, rec, f1]
+        return pd.DataFrame.from_dict(scores, columns=['Accuracy', 'Precision', 'Recall', 'f1'], orient='index')
 
     def predict(self, data):
         results = {}
