@@ -2,7 +2,6 @@ from sklearn.base import TransformerMixin
 from sklearn_pandas import DataFrameMapper
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import label_binarize
 import numpy as np
 import spacy
 import torch
@@ -56,5 +55,4 @@ class PreProcessor:
         ])
 
     def transform(self, df):
-        labels = label_binarize(df.pop('label'), classes=['none', 'astroturf'])
-        return self.mapper.fit_transform(df), labels
+        return self.mapper.fit_transform(df)

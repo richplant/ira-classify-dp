@@ -20,26 +20,22 @@ def train(args, data, labels, model_type='sk-models'):
         models = skmodels.SkModels()
         scores = models.run_models(data, labels)
         models.save_models(args.o.joinpath('models'))
-        print(scores)
         now = datetime.now()
         scores.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-sk-models.csv'), index=True)
 
     elif model_type == 'tf-models':
-        models = tfmodels.TFModels(data.shape)
+        models = tfmodels.TFModels((data.shape[1]))
         scores = models.run_models(data, labels)
         models.save_models(args.o.joinpath('models'))
         report = models.save_history(scores, args.o.joinpath('training'))
-        print(report)
         now = datetime.now()
         report.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-tf-models.csv'), index=True)
 
     elif model_type == 'tf-priv-models':
-        data = data.reshape((data.shape[0], 1, data.shape[1]))
-        models = tfprivmodels.TFPrivModels((data.shape[1], data.shape[2]))
+        models = tfprivmodels.TFPrivModels((data.shape[1]))
         scores = models.run_models(data, labels)
         models.save_models(args.o.joinpath('models'))
         report = models.save_history(scores, args.o.joinpath('training'))
-        print(report)
         now = datetime.now()
         report.to_csv(args.o.joinpath('training').joinpath(f'{now.strftime("%Y-%m-%d")}-tfpriv-models.csv'), index=True)
 
